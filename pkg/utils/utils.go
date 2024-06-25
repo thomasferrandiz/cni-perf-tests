@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -10,6 +11,7 @@ import (
 type SshConfig struct {
 	User     string
 	Hostname string
+	Port     int
 	KeyPath  string
 }
 
@@ -29,7 +31,7 @@ func RunCommandRemotely(conf SshConfig, cmd string) (string, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", conf.Hostname, config)
+	conn, err := ssh.Dial("tcp", conf.Hostname+":"+fmt.Sprint(conf.Port), config)
 	if err != nil {
 		return "", err
 	}

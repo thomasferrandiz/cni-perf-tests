@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/tferrandiz/cni-perf-tests/pkg/perf"
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
 	log "k8s.io/klog/v2"
 )
@@ -24,6 +25,30 @@ to quickly create a Cobra application.`,
 	Run: runTests,
 }
 
+// mako1
+var masterNode = utils.SshConfig{
+	User:     "root",
+	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
+	Hostname: "10.84.158.1",
+	Port:     22,
+}
+
+// mako2
+var workerNode1 = utils.SshConfig{
+	User:     "root",
+	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
+	Hostname: "10.84.158.2",
+	Port:     22,
+}
+
+// mako3
+var workerNode2 = utils.SshConfig{
+	User:     "root",
+	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
+	Hostname: "10.84.158.3",
+	Port:     22,
+}
+
 func init() {
 	rootCmd.AddCommand(runTestsCmd)
 
@@ -38,17 +63,28 @@ func init() {
 	// runTestsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func runTests(cmd *cobra.Command, args []string) {
-	fmt.Println("runTests called")
-	mako2 := utils.SshConfig{
-		User:     "root",
-		KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
-		Hostname: "10.84.158.2:22",
-	}
-	res, err := utils.RunCommandRemotely(mako2, "iperf3 --version")
+func testConnections() {
+	res, err := utils.RunCommandRemotely(masterNode, "kubectl get nodes")
 	if err != nil {
 		panic(err)
 	}
-	log.Infof("result: %v", res)
+	log.Infof("result on masterNode\n: %v", res)
 
+	res, err = utils.RunCommandRemotely(workerNode1, "iperf3 --version")
+	if err != nil {
+		panic(err)
+	}
+	log.Infof("result on workerNode1:\n %v", res)
+
+	res, err = utils.RunCommandRemotely(workerNode2, "iperf3 --version")
+	if err != nil {
+		panic(err)
+	}
+	log.Infof("result on workerNode2:\n %v", res)
+}
+
+func runTests(cmd *cobra.Command, args []string) {
+	fmt.Println("runTests called")
+	// testConnections()
+	perf.BareMetalPerfTests(workerNode1, workerNode2)
 }
