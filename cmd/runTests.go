@@ -40,7 +40,12 @@ func init() {
 
 func runTests(cmd *cobra.Command, args []string) {
 	fmt.Println("runTests called")
-	res, err := utils.RunCommandRemotely("iperf3 --version", "mako2")
+	mako2 := utils.SshConfig{
+		User:     "root",
+		KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
+		Hostname: "10.84.158.2:22",
+	}
+	res, err := utils.RunCommandRemotely(mako2, "iperf3 --version")
 	if err != nil {
 		panic(err)
 	}

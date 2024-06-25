@@ -1,12 +1,17 @@
 package utils
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 
 	"golang.org/x/crypto/ssh"
 )
+
+type SshConfig struct {
+	User     string
+	Hostname string
+	KeyPath  string
+}
 
 // RunCommand execute a command on the host
 func RunCommand(cmd string) (string, error) {
@@ -15,16 +20,16 @@ func RunCommand(cmd string) (string, error) {
 	return string(out), err
 }
 
-func RunCommandRemotely(cmd, hostname string) (string, error) {
+func RunCommandRemotely(conf SshConfig, cmd string) (string, error) {
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: conf.User,
 		Auth: []ssh.AuthMethod{
-			publicKey("mykey"),
+			publicKey(conf.KeyPath),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", hostname, config)
+	conn, err := ssh.Dial("tcp", conf.Hostname, config)
 	if err != nil {
 		return "", err
 	}
@@ -36,15 +41,11 @@ func RunCommandRemotely(cmd, hostname string) (string, error) {
 	}
 	defer session.Close()
 
-	var b bytes.Buffer
-	session.Stdout = &b
-	session.Stderr = &b
-
-	err = session.Run(cmd) // eg., /usr/bin/whoami
+	res, err := session.CombinedOutput(cmd) // eg., /usr/bin/whoami
 	if err != nil {
 		return "", err
 	}
-	return b.String(), err
+	return string(res), err
 }
 
 func publicKey(path string) ssh.AuthMethod {
