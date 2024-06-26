@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -85,6 +86,9 @@ func testConnections() {
 
 func runTests(cmd *cobra.Command, args []string) {
 	fmt.Println("runTests called")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// testConnections()
-	perf.BareMetalPerfTests(workerNode1, workerNode2)
+	perf.BareMetalPerfTests(ctx, workerNode1, workerNode2)
 }

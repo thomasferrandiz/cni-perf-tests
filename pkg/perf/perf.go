@@ -1,6 +1,8 @@
 package perf
 
 import (
+	"context"
+
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
 	log "k8s.io/klog/v2"
 )
@@ -17,12 +19,12 @@ func CheckLocalIPerf3() bool {
 	return true
 }
 
-func runIperf3Server(host utils.SshConfig) (string, error) {
-	res, err := utils.RunCommandRemotely(host, "iperf3 -s")
+func runIperf3Server(ctx context.Context, host utils.SshConfig) {
+	log.Infof("Starting remote iperf3 server...")
+	_, err := utils.RunCommandRemotely(host, "iperf3 -s -1")
 	if err != nil {
-		return "", err
+		log.Errorf("Error while running iperf3 server: %v", err)
 	}
-	return res, nil
 }
 
 func runIperf3TcpMono(host utils.SshConfig, serverAddr string) (string, error) {
@@ -35,8 +37,8 @@ func runIperf3TcpMono(host utils.SshConfig, serverAddr string) (string, error) {
 	return res, nil
 }
 
-func BareMetalPerfTests(clientHost, serverHost utils.SshConfig) error {
-	go runIperf3Server(serverHost)
+func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshConfig) error {
+	go runIperf3Server(ctx, serverHost)
 
 	res, err := runIperf3TcpMono(clientHost, serverHost.Hostname)
 	if err != nil {
