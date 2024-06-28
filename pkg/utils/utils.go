@@ -41,24 +41,26 @@ func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 	return conn, nil
 }
 
-func RunCommandRemotely(conf SshConfig, cmd string) (string, error) {
+func RunCommandRemotely(conf SshConfig, cmd string) ([]byte, error) {
 	conn, err := CreateSShClient(conf)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer session.Close()
 
+	log.Infof("Running command [ %s ] on host [ %s ]...", cmd, conf.Hostname)
 	res, err := session.CombinedOutput(cmd) // eg., /usr/bin/whoami
 	if err != nil {
-		return "", err
+		log.Errorf("command result:\n %s", res)
+		return nil, err
 	}
-	return string(res), err
+	return res, err
 }
 
 func RunCommandRemotelyWithTimeout(ctx context.Context, timeout time.Duration, conf SshConfig, cmd string) error {

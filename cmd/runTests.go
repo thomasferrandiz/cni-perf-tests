@@ -90,5 +90,5 @@ func runTests(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	// testConnections()
-	perf.BareMetalPerfTests(ctx, workerNode1, workerNode2)
+	perf.AllPerfTests(ctx, workerNode1, workerNode2)
 }
