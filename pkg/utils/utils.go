@@ -8,15 +8,43 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	yamlv2 "gopkg.in/yaml.v2"
 	log "k8s.io/klog/v2"
 )
 
+type Servers struct {
+	MasterNode  SshConfig
+	WorkerNode1 SshConfig
+	WorkerNode2 SshConfig
+}
 type SshConfig struct {
 	User     string
 	IpAddr   string // ip to use for ssh
 	Port     int
 	KeyPath  string
 	Nodename string // name as k8s node
+}
+
+func ParseConfig(conf []byte) (*Servers, error) {
+	testConf := new(Servers)
+	err := yamlv2.Unmarshal(conf, testConf)
+	if err != nil {
+		return nil, err
+	}
+
+	return testConf, nil
+}
+
+func ReadConfigFile(filename string) (*Servers, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	testConf, err := ParseConfig(content)
+	if err != nil {
+		return nil, err
+	}
+	return testConf, nil
 }
 
 // RunCommand execute a command on the host

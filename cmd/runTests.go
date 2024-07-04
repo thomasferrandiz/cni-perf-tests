@@ -26,32 +26,7 @@ to quickly create a Cobra application.`,
 	Run: runTests,
 }
 
-// mako1
-var masterNode = utils.SshConfig{
-	User:     "root",
-	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
-	IpAddr:   "10.84.158.1",
-	Port:     22,
-	Nodename: "mako1",
-}
-
-// mako2
-var workerNode1 = utils.SshConfig{
-	User:     "root",
-	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
-	IpAddr:   "10.84.158.2",
-	Port:     22,
-	Nodename: "mako2",
-}
-
-// mako3
-var workerNode2 = utils.SshConfig{
-	User:     "root",
-	KeyPath:  "/Users/tferrandiz/.ssh/id_rsa",
-	IpAddr:   "10.84.158.3",
-	Port:     22,
-	Nodename: "mako3",
-}
+var serversFilename string
 
 func init() {
 	rootCmd.AddCommand(runTestsCmd)
@@ -60,31 +35,13 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// runTestsCmd.PersistentFlags().String("foo", "", "A help for foo")
+	runTestsCmd.PersistentFlags().StringVar(&serversFilename, "servers", "", "path to yaml file with servers list")
+	// runTestsCmd.PersistentFlags().String("servers", "", "path to yaml file with servers list")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// runTestsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func testConnections() {
-	res, err := utils.RunCommandRemotely(masterNode, "kubectl get nodes")
-	if err != nil {
-		panic(err)
-	}
-	log.Infof("result on masterNode\n: %v", res)
-
-	res, err = utils.RunCommandRemotely(workerNode1, "iperf3 --version")
-	if err != nil {
-		panic(err)
-	}
-	log.Infof("result on workerNode1:\n %v", res)
-
-	res, err = utils.RunCommandRemotely(workerNode2, "iperf3 --version")
-	if err != nil {
-		panic(err)
-	}
-	log.Infof("result on workerNode2:\n %v", res)
+	// runTestsCmd.Flags().String("servers", "", "path to yaml file with servers list")
+	// viper.BindPFlag("servers", runTestsCmd.PersistentFlags().Lookup("servers"))
 }
 
 func runTests(cmd *cobra.Command, args []string) {
@@ -92,6 +49,12 @@ func runTests(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// testConnections()
-	perf.AllPerfTests(ctx, masterNode, workerNode1, workerNode2)
+	log.Infof("servers file: %s", serversFilename)
+	servers, err := utils.ReadConfigFile(serversFilename)
+	if err != nil {
+		log.Errorf("could not read servers file: %v", err)
+	}
+	log.Infof("servers: %v", servers)
+
+	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2)
 }
