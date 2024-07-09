@@ -37,43 +37,47 @@ func runBMIPerf3UdpMono(host utils.SshConfig, serverAddr string) ([]byte, error)
 	return res, nil
 }
 
-func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshConfig) (testResults, error) {
+func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
 	results := make(testResults, 2)
-	go runBMIperf3Server(ctx, serverHost)
-	time.Sleep(waitForIperf3Server * time.Second)
-
-	res, err := runBMIperf3TcpMono(clientHost, serverHost.IpAddr)
-	if err != nil {
-		return nil, err
-	}
-	tcpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
 
 	results[0] = testResult{
 		testType: TypeBareMetal,
 		protocol: TCPProtocol,
-		rate:     tcpRate,
 	}
-	time.Sleep(waitForIperf3Server * time.Second)
-
-	go runBMIperf3Server(ctx, serverHost)
-	time.Sleep(waitForIperf3Server * time.Second)
-
-	res, err = runBMIPerf3UdpMono(clientHost, serverHost.IpAddr)
-	if err != nil {
-		return nil, err
-	}
-	udpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
 	results[1] = testResult{
 		testType: TypeBareMetal,
 		protocol: UDPProtocol,
-		rate:     udpRate,
+	}
+	for i := 0; i < nbIter; i++ {
+		go runBMIperf3Server(ctx, serverHost)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		res, err := runBMIperf3TcpMono(clientHost, serverHost.IpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[0].rates = append(results[0].rates, tcpRate)
+
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		go runBMIperf3Server(ctx, serverHost)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		res, err = runBMIPerf3UdpMono(clientHost, serverHost.IpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[1].rates = append(results[1].rates, udpRate)
 	}
 
 	return results, nil

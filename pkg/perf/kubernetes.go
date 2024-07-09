@@ -80,148 +80,148 @@ func runPodIperf3UdpMono(masterNode utils.SshConfig, podName, serverAddr string)
 	return res, nil
 }
 
-func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig) (testResults, error) {
+func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
 	results := make(testResults, 2)
-
-	podName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
-	if err != nil {
-		return nil, err
-	}
-	iperf3ServerIpAddr, err := getPodIperf3ServerIpAddr(masterNode, podName)
-	if err != nil {
-		return nil, fmt.Errorf("couldnt run NodeToPodPerfTests: %v", err)
-	}
-
-	res, err := runBMIperf3TcpMono(clientHost, iperf3ServerIpAddr)
-	if err != nil {
-		return nil, err
-	}
-	tcpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("TcpRate: %f", tcpRate)
 
 	results[0] = testResult{
 		testType: TypeNodePod,
 		protocol: TCPProtocol,
-		rate:     tcpRate,
 	}
-
-	res, err = runBMIPerf3UdpMono(clientHost, iperf3ServerIpAddr)
-	if err != nil {
-		return nil, err
-	}
-	udpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("UdpRate: %f", udpRate)
 	results[1] = testResult{
 		testType: TypeNodePod,
 		protocol: UDPProtocol,
-		rate:     udpRate,
+	}
+
+	for i := 0; i < nbIter; i++ {
+		podName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
+		if err != nil {
+			return nil, err
+		}
+		iperf3ServerIpAddr, err := getPodIperf3ServerIpAddr(masterNode, podName)
+		if err != nil {
+			return nil, fmt.Errorf("couldnt run NodeToPodPerfTests: %v", err)
+		}
+
+		res, err := runBMIperf3TcpMono(clientHost, iperf3ServerIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[0].rates = append(results[0].rates, tcpRate)
+
+		res, err = runBMIPerf3UdpMono(clientHost, iperf3ServerIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[1].rates = append(results[1].rates, udpRate)
+
 	}
 
 	return results, nil
 }
 
-func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig) (testResults, error) {
+func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
 	results := make(testResults, 2)
-	go runBMIperf3Server(ctx, serverHost)
-	time.Sleep(waitForIperf3Server * time.Second)
-
-	podName, err := getIperf3ServerPodName(masterNode, clientHost.Nodename)
-	if err != nil {
-		return nil, err
-	}
-	res, err := runPodIperf3TcpMono(masterNode, podName, serverHost.IpAddr)
-	if err != nil {
-		return nil, err
-	}
-	tcpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("TcpRate: %f", tcpRate)
 
 	results[0] = testResult{
 		testType: TypePodNode,
 		protocol: TCPProtocol,
-		rate:     tcpRate,
 	}
-
-	go runBMIperf3Server(ctx, serverHost)
-	time.Sleep(waitForIperf3Server * time.Second)
-	res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.IpAddr)
-	if err != nil {
-		return nil, err
-	}
-	udpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("UdpRate: %f", udpRate)
-
 	results[1] = testResult{
 		testType: TypePodNode,
 		protocol: UDPProtocol,
-		rate:     udpRate,
 	}
+
+	for i := 0; i < nbIter; i++ {
+
+		go runBMIperf3Server(ctx, serverHost)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		podName, err := getIperf3ServerPodName(masterNode, clientHost.Nodename)
+		if err != nil {
+			return nil, err
+		}
+		res, err := runPodIperf3TcpMono(masterNode, podName, serverHost.IpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[0].rates = append(results[0].rates, tcpRate)
+
+		go runBMIperf3Server(ctx, serverHost)
+		time.Sleep(waitForIperf3Server * time.Second)
+		res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.IpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[1].rates = append(results[1].rates, udpRate)
+	}
+
 	return results, nil
 }
 
-func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig) (testResults, error) {
+func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
 	results := make(testResults, 2)
-
-	serverPodName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
-	if err != nil {
-		return nil, err
-	}
-	iperf3ServerIpAddr, err := getPodIperf3ServerIpAddr(masterNode, serverPodName)
-	if err != nil {
-		return nil, fmt.Errorf("couldnt run NodeToPodPerfTests: %v", err)
-	}
-	clientPodName, err := getIperf3ServerPodName(masterNode, clientHost.Nodename)
-	if err != nil {
-		return nil, err
-	}
-	res, err := runPodIperf3TcpMono(masterNode, clientPodName, iperf3ServerIpAddr)
-	if err != nil {
-		return nil, err
-	}
-	tcpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("TcpRate: %f", tcpRate)
 
 	results[0] = testResult{
 		testType: TypePodPod,
 		protocol: TCPProtocol,
-		rate:     tcpRate,
 	}
-
-	res, err = runPodIperf3UdpMono(masterNode, clientPodName, iperf3ServerIpAddr)
-	if err != nil {
-		return nil, err
-	}
-	udpRate, err := utils.ParseIperf3JsonOutput(res)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("UdpRate: %f", udpRate)
-
 	results[1] = testResult{
 		testType: TypePodPod,
 		protocol: UDPProtocol,
-		rate:     udpRate,
+	}
+
+	for i := 0; i < nbIter; i++ {
+
+		serverPodName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
+		if err != nil {
+			return nil, err
+		}
+		iperf3ServerIpAddr, err := getPodIperf3ServerIpAddr(masterNode, serverPodName)
+		if err != nil {
+			return nil, fmt.Errorf("couldnt run NodeToPodPerfTests: %v", err)
+		}
+		clientPodName, err := getIperf3ServerPodName(masterNode, clientHost.Nodename)
+		if err != nil {
+			return nil, err
+		}
+		res, err := runPodIperf3TcpMono(masterNode, clientPodName, iperf3ServerIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[0].rates = append(results[0].rates, tcpRate)
+
+		res, err = runPodIperf3UdpMono(masterNode, clientPodName, iperf3ServerIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[1].rates = append(results[1].rates, udpRate)
 	}
 
 	return results, nil

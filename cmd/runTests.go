@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/tferrandiz/cni-perf-tests/pkg/perf"
@@ -26,7 +25,12 @@ to quickly create a Cobra application.`,
 	Run: runTests,
 }
 
+// variables to store the command flag values
+// Path to configuration file for the servers
 var serversFilename string
+
+// Number of interation for each test
+var nbIter int
 
 func init() {
 	rootCmd.AddCommand(runTestsCmd)
@@ -36,6 +40,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	runTestsCmd.PersistentFlags().StringVar(&serversFilename, "servers", "", "path to yaml file with servers list")
+	runTestsCmd.PersistentFlags().IntVar(&nbIter, "iterations", 1, "number of iteration for each test")
 	// runTestsCmd.PersistentFlags().String("servers", "", "path to yaml file with servers list")
 
 	// Cobra supports local flags which will only run when this command
@@ -45,10 +50,10 @@ func init() {
 }
 
 func runTests(cmd *cobra.Command, args []string) {
-	fmt.Println("runTests called")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	log.Infof("Number of iterations: %d", nbIter)
 	log.Infof("servers file: %s", serversFilename)
 	servers, err := utils.ReadConfigFile(serversFilename)
 	if err != nil {
@@ -56,5 +61,5 @@ func runTests(cmd *cobra.Command, args []string) {
 	}
 	log.Infof("servers: %v", servers)
 
-	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2)
+	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter)
 }

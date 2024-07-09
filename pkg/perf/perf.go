@@ -38,6 +38,7 @@ type testResult struct {
 	testType testType
 	protocol string
 	rate     float64
+	rates    []float64
 }
 
 type testResults []testResult
@@ -50,7 +51,7 @@ const (
 func exportToCSV(results testResults) []string {
 	var bres []string
 	for _, result := range results {
-		b := fmt.Sprintf("%s,%s,%f\n", result.protocol, result.testType, result.rate)
+		b := fmt.Sprintf("%s,%s,%f\n", result.protocol, result.testType, result.rates)
 		bres = append(bres, b)
 	}
 	return bres
@@ -74,30 +75,30 @@ func writeCSVFile(results testResults, filename string) error {
 	return nil
 }
 
-func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig) {
+func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) {
 	results := make(testResults, 0)
-	bmRes, err := BareMetalPerfTests(ctx, clientHost, serverHost)
+	bmRes, err := BareMetalPerfTests(ctx, clientHost, serverHost, nbIter)
 	if err != nil {
 		log.Errorf("Couldn't run baremetal tests: %v", err)
 	} else {
 		results = append(results, bmRes...)
 	}
 
-	npRes, err := NodeToPodPerfTests(ctx, masterNode, clientHost, serverHost)
+	npRes, err := NodeToPodPerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
 	if err != nil {
 		log.Errorf("Couldn't run NodeToPodPerfTests tests: %v", err)
 	} else {
 		results = append(results, npRes...)
 	}
 
-	pnRes, err := PodToNodePerfTests(ctx, masterNode, clientHost, serverHost)
+	pnRes, err := PodToNodePerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
 	if err != nil {
 		log.Errorf("Couldn't run PodToNodePerfTests tests: %v", err)
 	} else {
 		results = append(results, pnRes...)
 	}
 
-	ppRes, err := PodToPodPerfTests(ctx, masterNode, clientHost, serverHost)
+	ppRes, err := PodToPodPerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
 	if err != nil {
 		log.Errorf("Couldn't run PodToPodPerfTests tests: %v", err)
 	} else {
