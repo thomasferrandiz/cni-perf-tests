@@ -39,6 +39,7 @@ type testResult struct {
 	protocol string
 	rate     float64
 	rates    []float64
+	latency  float64
 }
 
 type testResults []testResult

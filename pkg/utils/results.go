@@ -2,6 +2,9 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
 type results struct {
@@ -33,4 +36,19 @@ func ParseIperf3JsonOutput(result []byte) (float64, error) {
 	}
 
 	return res.End.Sum_sent.Bits_per_second, nil
+}
+
+func ParsePingOutput(result []byte) (float64, error) {
+	output := string(result)
+	output = strings.TrimSpace(output)
+
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "round-trip") {
+			res := strings.Split(line, " = ")
+			res = strings.Split(res[1], "/")
+			return strconv.ParseFloat(res[1], 64)
+		}
+	}
+	return -1, fmt.Errorf("could not parse ping result")
 }
