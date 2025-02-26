@@ -38,7 +38,7 @@ func runBMIPerf3UdpMono(host utils.SshConfig, serverAddr string) ([]byte, error)
 }
 
 func runLatencyTest(host utils.SshConfig, serverAddr string) ([]byte, error) {
-	pingCommand := "ping -c 10" + serverAddr
+	pingCommand := "ping -c 10 " + serverAddr
 
 	res, err := utils.RunCommandRemotely(host, pingCommand)
 	if err != nil {
@@ -59,10 +59,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		protocol: UDPProtocol,
 	}
 	for i := 0; i < nbIter; i++ {
-		res, err := runLatencyTest(clientHost, serverHost.IpAddr)
-		if err != nil {
-			return nil, err
-		}
+		// res, err := runLatencyTest(clientHost, serverHost.IpAddr)
+		// if err != nil {
+		// 	return nil, err
+		// }
 		// latency, err := utils.ParsePingOutput(res)
 		// if err != nil {
 		// 	return nil, err
@@ -71,7 +71,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
-		res, err = runBMIperf3TcpMono(clientHost, serverHost.IpAddr)
+		res, err := runBMIperf3TcpMono(clientHost, serverHost.IpAddr)
 		if err != nil {
 			return nil, err
 		}

@@ -20,6 +20,8 @@ spec:
         app: iperf3
     spec:
       containers:
-      - image: mlabbe/iperf3:latest
+      - image: networkstatic/iperf3:latest
         imagePullPolicy: Always
         name: iperf3server
+        command: ["iperf3", "-s"]
+        

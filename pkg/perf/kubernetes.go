@@ -14,7 +14,7 @@ const (
 	kubectl                    = "/var/lib/rancher/rke2/bin/kubectl "
 	kubeconfig                 = " --kubeconfig=/etc/rancher/rke2/rke2.yaml --server=https://127.0.0.1:6443"
 	kubeconfigPath             = "/etc/rancher/rke2/rke2.yaml"
-	iperf3ServerPodCommand     = kubectl + "run iperf3server --image mlabbe/iperf3:latest --overrides='{ \"spec\": {  \"nodeName\":\"%s\" } }'-- %s"
+	iperf3ServerPodCommand     = kubectl + "run iperf3server --image networkstatic/iperf3:latest --overrides='{ \"spec\": {  \"nodeName\":\"%s\" } }'-- %s"
 	iperf3ServerKillPodCommand = kubectl + "delete pod iperf3server"
 	iperf3ServerIpAddrCommand  = kubectl + "get pod %s --template={{.status.podIP}} -n iperf3-test"
 	iperf3ServerGetCommand     = kubectl + "get pods --field-selector 'spec.nodeName=%s' -n iperf3-test --no-headers"
