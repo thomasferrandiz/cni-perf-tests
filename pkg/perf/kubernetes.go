@@ -148,7 +148,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		res, err := runPodIperf3TcpMono(masterNode, podName, serverHost.IpAddr)
+		res, err := runPodIperf3TcpMono(masterNode, podName, serverHost.TestIpAddr)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
-		res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.IpAddr)
+		res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.TestIpAddr)
 		if err != nil {
 			return nil, err
 		}

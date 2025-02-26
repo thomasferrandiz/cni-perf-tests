@@ -18,11 +18,12 @@ type Servers struct {
 	WorkerNode2 SshConfig
 }
 type SshConfig struct {
-	User     string
-	IpAddr   string // ip to use for ssh
-	Port     int
-	KeyPath  string
-	Nodename string // name as k8s node
+	User       string
+	SshIpAddr  string // ip to use for ssh
+	TestIpAddr string // ip to use for the tests (i.e iperf3)
+	Port       int
+	KeyPath    string
+	Nodename   string // name as k8s node
 }
 
 func ParseConfig(conf []byte) (*Servers, error) {
@@ -63,7 +64,7 @@ func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", conf.IpAddr+":"+fmt.Sprint(conf.Port), config)
+	conn, err := ssh.Dial("tcp", conf.SshIpAddr+":"+fmt.Sprint(conf.Port), config)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func RunCommandRemotely(conf SshConfig, cmd string) ([]byte, error) {
 	}
 	defer session.Close()
 	session.Setenv("KUBECONFIG", "/etc/rancher/rke2/rke2.yaml")
-	log.Infof("Running command [ %s ] on host [ %s ]...", cmd, conf.IpAddr)
+	log.Infof("Running command [ %s ] on host [ %s ]...", cmd, conf.SshIpAddr)
 	res, err := session.CombinedOutput(cmd) // eg., /usr/bin/whoami
 	if err != nil {
 		log.Errorf("command result:\n %s", res)
@@ -107,7 +108,7 @@ func RunCommandRemotelyWithTimeout(ctx context.Context, timeout time.Duration, c
 
 	toctx, cancelFunc := context.WithTimeout(ctx, timeout)
 	defer cancelFunc()
-	log.Infof("Starting command [ %s ] on remote host [ %s ] with timeout [ %v ]", cmd, conf.IpAddr, timeout)
+	log.Infof("Starting command [ %s ] on remote host [ %s ] with timeout [ %v ]", cmd, conf.SshIpAddr, timeout)
 	if err := session.Start(cmd); err != nil {
 		return err
 	}
