@@ -2,8 +2,10 @@ package perf
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
 	log "k8s.io/klog/v2"
@@ -34,12 +36,29 @@ const (
 	UDPProtocol = "UDP"
 )
 
+type streamType int
+
+const (
+	StreamMono = iota
+	StreamMulti
+)
+
+var streamName = map[streamType]string{
+	StreamMono:  "mono-stream",
+	StreamMulti: "multi-stream",
+}
+
+func (st streamType) String() string {
+	return streamName[st]
+}
+
 type testResult struct {
-	testType testType
-	protocol string
-	rate     float64
-	rates    []float64
-	latency  float64
+	testType   testType
+	streamType streamType
+	protocol   string
+	rate       float64
+	rates      []float64 // one entry for each run of the test
+	latency    float64
 }
 
 type testResults []testResult
@@ -52,7 +71,8 @@ const (
 func exportToCSV(results testResults) []string {
 	var bres []string
 	for _, result := range results {
-		b := fmt.Sprintf("%s,%s,%f\n", result.protocol, result.testType, result.rates)
+		jrates, _ := json.Marshal(result.rates)
+		b := fmt.Sprintf("%s, %s, %s, %s\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"))
 		bres = append(bres, b)
 	}
 	return bres
