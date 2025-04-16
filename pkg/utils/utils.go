@@ -64,8 +64,11 @@ func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", conf.SshIpAddr+":"+fmt.Sprint(conf.Port), config)
+	address := conf.SshIpAddr + ":" + fmt.Sprint(conf.Port)
+	log.Infof("ssh: connecting to %s", address)
+	conn, err := ssh.Dial("tcp", address, config)
 	if err != nil {
+		log.Errorf(err.Error())
 		return nil, err
 	}
 	return conn, nil

@@ -101,8 +101,9 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		// if err != nil {
 		// 	return nil, err
 		// }
-
+		log.Infof("##### Running baremetal test [ %d ] #####", i)
 		// TCP Mono
+		log.Infof("    ##### TCP Mono")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -120,6 +121,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		// TCP Multi
+		log.Infof("    ##### TCP Multi")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -137,6 +139,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
+		log.Infof("    ##### UDP Mono")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -153,6 +156,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
+		log.Infof("    ##### UDP Multi")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 

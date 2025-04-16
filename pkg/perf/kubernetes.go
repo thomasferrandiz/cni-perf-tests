@@ -123,6 +123,8 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 	}
 
 	for i := 0; i < nbIter; i++ {
+		log.Infof("##### Running NodetoPod test [ %d ] #####", i)
+
 		podName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
 		if err != nil {
 			return nil, err
@@ -133,6 +135,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		//TCP Mono
+		log.Infof("    ##### TCP Mono")
 		res, err := runBMIperf3TcpMono(clientHost, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, err
@@ -144,6 +147,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[0].rates = append(results[0].rates, tcpRate)
 
 		//TCP Multi
+		log.Infof("    ##### TCP Multi")
 		res, err = runBMIperf3TcpMulti(clientHost, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, err
@@ -155,6 +159,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[2].rates = append(results[2].rates, tcpRate)
 
 		//UDP Mono
+		log.Infof("    ##### UDP Mono")
 		res, err = runBMIPerf3UdpMono(clientHost, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, err
@@ -166,6 +171,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[1].rates = append(results[1].rates, udpRate)
 
 		//UDP Multi
+		log.Infof("    ##### UDP Multi")
 		res, err = runBMIPerf3UdpMulti(clientHost, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, err
@@ -206,9 +212,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 	}
 
 	for i := 0; i < nbIter; i++ {
-
-		go runBMIperf3Server(ctx, serverHost)
-		time.Sleep(waitForIperf3Server * time.Second)
+		log.Infof("##### Running PodtoNode test [ %d ] #####", i)
 
 		podName, err := getIperf3ServerPodName(masterNode, clientHost.Nodename)
 		if err != nil {
@@ -216,6 +220,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		//TCP Mono
+		log.Infof("    ##### TCP Mono")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -231,6 +236,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[0].rates = append(results[0].rates, tcpRate)
 
 		//TCP Multi
+		log.Infof("    ##### TCP Multi")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -246,6 +252,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[2].rates = append(results[2].rates, tcpRate)
 
 		//UDP Mono
+		log.Infof("    ##### UDP Mono")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 		res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.TestIpAddr)
@@ -260,6 +267,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		results[1].rates = append(results[1].rates, udpRate)
 
 		//UDP Multi
+		log.Infof("    ##### UDP Multi")
 		go runBMIperf3Server(ctx, serverHost)
 		time.Sleep(waitForIperf3Server * time.Second)
 		res, err = runPodIperf3UdpMulti(masterNode, podName, serverHost.TestIpAddr)
@@ -303,6 +311,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 	}
 
 	for i := 0; i < nbIter; i++ {
+		log.Infof("##### Running PodToPod test [ %d ] #####", i)
 
 		serverPodName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
 		if err != nil {
@@ -318,6 +327,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		}
 
 		//TCP Mono
+		log.Infof("    ##### TCP Mono")
 		res, err := runPodIperf3TcpMono(masterNode, clientPodName, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMono: %w ", err)
@@ -329,6 +339,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		results[0].rates = append(results[0].rates, tcpRate)
 
 		//TCP Multi
+		log.Infof("    ##### TCP Multi")
 		res, err = runPodIperf3TcpMulti(masterNode, clientPodName, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMulti: %w ", err)
@@ -340,6 +351,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		results[2].rates = append(results[2].rates, tcpRate)
 
 		//UDP Mono
+		log.Infof("    ##### UDP Mono")
 		res, err = runPodIperf3UdpMono(masterNode, clientPodName, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3UdpMono: %w ", err)
@@ -352,6 +364,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		results[1].rates = append(results[1].rates, udpRate)
 
 		//UDP Multi
+		log.Infof("    ##### UDP Mono")
 		res, err = runPodIperf3UdpMulti(masterNode, clientPodName, iperf3ServerIpAddr)
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3UdpMulti: %w ", err)
