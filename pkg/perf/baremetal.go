@@ -2,6 +2,7 @@ package perf
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
@@ -92,6 +93,9 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		protocol:   UDPProtocol,
 	}
 
+	//WaitGroup to sync with the iperf3 server goroutine
+	wg := sync.WaitGroup{}
+
 	for i := 0; i < nbIter; i++ {
 		// res, err := runLatencyTest(clientHost, serverHost.IpAddr)
 		// if err != nil {
@@ -104,7 +108,12 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		log.Infof("##### Running baremetal test [ %d ] #####", i)
 		// TCP Mono
 		log.Infof("    ##### TCP Mono")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err := runBMIperf3TcpMono(clientHost, serverHost.TestIpAddr)
@@ -117,12 +126,16 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}
 
 		results[0].rates = append(results[0].rates, tcpRate)
-
-		time.Sleep(waitForIperf3Server * time.Second)
+		wg.Wait()
 
 		// TCP Multi
 		log.Infof("    ##### TCP Multi")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIperf3TcpMulti(clientHost, serverHost.TestIpAddr)
@@ -136,11 +149,16 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		results[2].rates = append(results[2].rates, tcpRate)
 
-		time.Sleep(waitForIperf3Server * time.Second)
+		wg.Wait()
 
 		//UDP Mono
 		log.Infof("    ##### UDP Mono")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3UdpMono(clientHost, serverHost.TestIpAddr)
@@ -153,11 +171,16 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
-		time.Sleep(waitForIperf3Server * time.Second)
+		wg.Wait()
 
 		//UDP Multi
 		log.Infof("    ##### UDP Multi")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3UdpMulti(clientHost, serverHost.TestIpAddr)
@@ -170,7 +193,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
-		time.Sleep(waitForIperf3Server * time.Second)
+		wg.Wait()
 	}
 
 	return results, nil

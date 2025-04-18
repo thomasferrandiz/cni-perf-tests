@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
@@ -145,6 +146,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[0].rates = append(results[0].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
 
 		//TCP Multi
 		log.Infof("    ##### TCP Multi")
@@ -157,6 +159,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[2].rates = append(results[2].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
 		log.Infof("    ##### UDP Mono")
@@ -169,6 +172,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[1].rates = append(results[1].rates, udpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
 		log.Infof("    ##### UDP Multi")
@@ -181,7 +185,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[3].rates = append(results[3].rates, udpRate)
-
+		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
 	return results, nil
@@ -210,6 +214,8 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		streamType: StreamMulti,
 		protocol:   UDPProtocol,
 	}
+	// WaitGroup to sync with the iperf3 server goroutine
+	wg := sync.WaitGroup{}
 
 	for i := 0; i < nbIter; i++ {
 		log.Infof("##### Running PodtoNode test [ %d ] #####", i)
@@ -221,7 +227,12 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 
 		//TCP Mono
 		log.Infof("    ##### TCP Mono")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err := runPodIperf3TcpMono(masterNode, podName, serverHost.TestIpAddr)
@@ -234,10 +245,16 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[0].rates = append(results[0].rates, tcpRate)
+		wg.Wait()
 
 		//TCP Multi
 		log.Infof("    ##### TCP Multi")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runPodIperf3TcpMulti(masterNode, podName, serverHost.TestIpAddr)
@@ -250,10 +267,16 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[2].rates = append(results[2].rates, tcpRate)
+		wg.Wait()
 
 		//UDP Mono
 		log.Infof("    ##### UDP Mono")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 		res, err = runPodIperf3UdpMono(masterNode, podName, serverHost.TestIpAddr)
 		if err != nil {
@@ -265,10 +288,16 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
+		wg.Wait()
 
 		//UDP Multi
 		log.Infof("    ##### UDP Multi")
-		go runBMIperf3Server(ctx, serverHost)
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 		res, err = runPodIperf3UdpMulti(masterNode, podName, serverHost.TestIpAddr)
 		if err != nil {
@@ -280,7 +309,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
-		time.Sleep(waitForIperf3Server * time.Second)
+		wg.Wait()
 	}
 
 	return results, nil
@@ -337,6 +366,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 			return nil, fmt.Errorf("couldn't parse tcp mono rate: %w", err)
 		}
 		results[0].rates = append(results[0].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
 
 		//TCP Multi
 		log.Infof("    ##### TCP Multi")
@@ -349,6 +379,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 			return nil, fmt.Errorf("couldn't parse tcp multi rate: %w", err)
 		}
 		results[2].rates = append(results[2].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
 		log.Infof("    ##### UDP Mono")
@@ -363,6 +394,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 
 		results[1].rates = append(results[1].rates, udpRate)
 
+		time.Sleep(waitForIperf3Server * time.Second)
 		//UDP Multi
 		log.Infof("    ##### UDP Mono")
 		res, err = runPodIperf3UdpMulti(masterNode, clientPodName, iperf3ServerIpAddr)
@@ -375,7 +407,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
-
+		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
 	return results, nil

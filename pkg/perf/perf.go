@@ -64,7 +64,7 @@ type testResult struct {
 type testResults []testResult
 
 const (
-	waitForIperf3Server = 2 //time in seconds
+	waitForIperf3Server = 3 //time in seconds
 	iPerf3ServerCommand = "iperf3 -s -1"
 )
 
