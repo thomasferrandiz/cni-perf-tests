@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"time"
@@ -86,14 +87,26 @@ func RunCommandRemotely(conf SshConfig, cmd string) ([]byte, error) {
 		return nil, err
 	}
 	defer session.Close()
+
 	session.Setenv("KUBECONFIG", "/etc/rancher/rke2/rke2.yaml")
 	log.Infof("Running command [ %s ] on host [ %s ]...", cmd, conf.SshIpAddr)
-	res, err := session.CombinedOutput(cmd) // eg., /usr/bin/whoami
+	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Errorf("command result:\n %s", res)
+		log.Fatalf("failed to get stdout: %s", err)
+	}
+	err = session.Start(cmd) // eg., /usr/bin/whoami
+	if err != nil {
+		log.Errorf("command result:\n %s", err)
 		return nil, err
 	}
-	return res, err
+	output, err := io.ReadAll(stdout)
+	if err != nil {
+		log.Fatalf("failed to read stdout: %s", err)
+	}
+	if err := session.Wait(); err != nil {
+		log.Fatalf("command failed: %s", err)
+	}
+	return output, err
 }
 
 func RunCommandRemotelyWithTimeout(ctx context.Context, timeout time.Duration, conf SshConfig, cmd string) error {
