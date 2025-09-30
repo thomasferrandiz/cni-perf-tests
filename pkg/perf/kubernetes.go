@@ -12,31 +12,32 @@ import (
 )
 
 const (
-	kubectl                    = "/var/lib/rancher/rke2/bin/kubectl "
-	kubeconfig                 = " --kubeconfig=/etc/rancher/rke2/rke2.yaml --server=https://127.0.0.1:6443 "
-	kubeconfigPath             = "/etc/rancher/rke2/rke2.yaml"
-	iperf3ServerPodCommand     = kubectl + kubeconfig + "run iperf3server --image networkstatic/iperf3:latest --overrides='{ \"spec\": {  \"nodeName\":\"%s\" } }'-- %s"
-	iperf3ServerKillPodCommand = kubectl + kubeconfig + "delete pod iperf3server"
+	kubectl        = "/var/lib/rancher/rke2/bin/kubectl "
+	kubeconfig     = " --kubeconfig=/etc/rancher/rke2/rke2.yaml --server=https://127.0.0.1:6443 "
+	kubeconfigPath = "/etc/rancher/rke2/rke2.yaml"
+	// iperf3ServerPodCommand     = kubectl + kubeconfig + "run iperf3server --image networkstatic/iperf3:latest --overrides='{ \"spec\": {  \"nodeName\":\"%s\" } }'-- %s"
+	// iperf3ServerKillPodCommand = kubectl + kubeconfig + "delete pod iperf3server"
 	iperf3ServerIpAddrCommand  = kubectl + kubeconfig + "get pod %s --template={{.status.podIP}} -n iperf3-test"
 	iperf3ServerGetCommand     = kubectl + kubeconfig + "get pods --field-selector 'spec.nodeName=%s' -n iperf3-test --no-headers"
 	iperf3PodRunCommand        = kubectl + kubeconfig + "-n iperf3-test exec %s -- %s"
+	iperf3ServiceIpAddrCommand = kubectl + kubeconfig + "get services -n iperf3-test --field-selector 'metadata.name=iperf3-%s' -o=jsonpath='{.items[0].spec.clusterIP}'"
 )
 
-func startPodIperf3Server(ctx context.Context, masterNode utils.SshConfig, serverName string) {
-	log.Infof("Starting remote iperf3 server in pod...")
-	_, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerPodCommand, serverName, iPerf3ServerCommand))
-	if err != nil {
-		log.Errorf("Error while starting iperf3 server: %v", err)
-	}
-}
+// func startPodIperf3Server(ctx context.Context, masterNode utils.SshConfig, serverName string) {
+// 	log.Infof("Starting remote iperf3 server in pod...")
+// 	_, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerPodCommand, serverName, iPerf3ServerCommand))
+// 	if err != nil {
+// 		log.Errorf("Error while starting iperf3 server: %v", err)
+// 	}
+// }
 
-func killPodIperf3Server(ctx context.Context, masterNode utils.SshConfig) {
-	log.Infof("Killing remote iperf3 server in pod...")
-	_, err := utils.RunCommandRemotely(masterNode, iperf3ServerKillPodCommand)
-	if err != nil {
-		log.Errorf("Error while killing iperf3 server: %v", err)
-	}
-}
+// func killPodIperf3Server(ctx context.Context, masterNode utils.SshConfig) {
+// 	log.Infof("Killing remote iperf3 server in pod...")
+// 	_, err := utils.RunCommandRemotely(masterNode, iperf3ServerKillPodCommand)
+// 	if err != nil {
+// 		log.Errorf("Error while killing iperf3 server: %v", err)
+// 	}
+// }
 
 func getIperf3ServerPodName(masterNode utils.SshConfig, workerNodeName string) (string, error) {
 	bres, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerGetCommand, workerNodeName))
@@ -57,6 +58,14 @@ func getIperf3ServerPodName(masterNode utils.SshConfig, workerNodeName string) (
 
 func getPodIperf3ServerIpAddr(masterNode utils.SshConfig, podName string) (string, error) {
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerIpAddrCommand, podName))
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
+
+func getPodIperf3ServiceIpAddr(masterNode utils.SshConfig, nodeName string) (string, error) {
+	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServiceIpAddrCommand, nodeName))
 	if err != nil {
 		return "", err
 	}
@@ -177,6 +186,94 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		//UDP Multi
 		log.Infof("    ##### UDP Multi")
 		res, err = runBMIPerf3UdpMulti(clientHost, iperf3ServerIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[3].rates = append(results[3].rates, udpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
+	}
+
+	return results, nil
+}
+
+func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
+	results := make(testResults, 4)
+
+	results[0] = testResult{
+		testType:   TypeNodeService,
+		streamType: StreamMono,
+		protocol:   TCPProtocol,
+	}
+	results[1] = testResult{
+		testType:   TypeNodeService,
+		streamType: StreamMono,
+		protocol:   UDPProtocol,
+	}
+	results[2] = testResult{
+		testType:   TypeNodeService,
+		streamType: StreamMulti,
+		protocol:   TCPProtocol,
+	}
+	results[3] = testResult{
+		testType:   TypeNodeService,
+		streamType: StreamMulti,
+		protocol:   UDPProtocol,
+	}
+
+	for i := 0; i < nbIter; i++ {
+		log.Infof("##### Running NodetoService test [ %d ] #####", i)
+
+		iperf3ServiceIpAddr, err := getPodIperf3ServiceIpAddr(masterNode, serverHost.Nodename)
+		if err != nil {
+			return nil, fmt.Errorf("couldnt run NodeToPodPerfTests: %v", err)
+		}
+
+		//TCP Mono
+		log.Infof("    ##### TCP Mono")
+		res, err := runBMIperf3TcpMono(clientHost, iperf3ServiceIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[0].rates = append(results[0].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		//TCP Multi
+		log.Infof("    ##### TCP Multi")
+		res, err = runBMIperf3TcpMulti(clientHost, iperf3ServiceIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[2].rates = append(results[2].rates, tcpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		//UDP Mono
+		log.Infof("    ##### UDP Mono")
+		res, err = runBMIPerf3UdpMono(clientHost, iperf3ServiceIpAddr)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[1].rates = append(results[1].rates, udpRate)
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		//UDP Multi
+		log.Infof("    ##### UDP Multi")
+		res, err = runBMIPerf3UdpMulti(clientHost, iperf3ServiceIpAddr)
 		if err != nil {
 			return nil, err
 		}

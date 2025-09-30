@@ -104,7 +104,7 @@ func RunCommandRemotely(conf SshConfig, cmd string) ([]byte, error) {
 		log.Fatalf("failed to read stdout: %s", err)
 	}
 	if err := session.Wait(); err != nil {
-		log.Fatalf("command failed: %s", err)
+		log.Fatalf("command failed: %s\noutput:\n%s", err, output)
 	}
 	return output, err
 }

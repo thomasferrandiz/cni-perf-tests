@@ -15,16 +15,18 @@ type testType int
 
 const (
 	TypeNodePod = iota
+	TypeNodeService
 	TypePodNode
 	TypePodPod
 	TypeBareMetal
 )
 
 var typeName = map[testType]string{
-	TypeNodePod:   "node-to-pod",
-	TypePodNode:   "pod-to-node",
-	TypePodPod:    "pod-to-pod",
-	TypeBareMetal: "baremetal",
+	TypeNodePod:     "node-to-pod",
+	TypeNodeService: "node-to-service",
+	TypePodNode:     "pod-to-node",
+	TypePodPod:      "pod-to-pod",
+	TypeBareMetal:   "baremetal",
 }
 
 func (tt testType) String() string {
@@ -110,6 +112,13 @@ func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.
 		log.Errorf("Couldn't run NodeToPodPerfTests tests: %v", err)
 	} else {
 		results = append(results, npRes...)
+	}
+
+	nsRes, err := NodeToServicePerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
+	if err != nil {
+		log.Errorf("Couldn't run NodeToServicePerfTests tests: %v", err)
+	} else {
+		results = append(results, nsRes...)
 	}
 
 	pnRes, err := PodToNodePerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
