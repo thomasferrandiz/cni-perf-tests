@@ -32,6 +32,9 @@ var serversFilename string
 // Number of interation for each test
 var nbIter int
 
+// True if we run sriov tests, false otherwise
+var useSriov bool
+
 func init() {
 	rootCmd.AddCommand(runTestsCmd)
 
@@ -41,6 +44,7 @@ func init() {
 	// and all subcommands, e.g.:
 	runTestsCmd.PersistentFlags().StringVar(&serversFilename, "servers", "", "path to yaml file with servers list")
 	runTestsCmd.PersistentFlags().IntVar(&nbIter, "iterations", 1, "number of iteration for each test")
+	runTestsCmd.PersistentFlags().BoolVar(&useSriov, "useSriov", false, "run tests using multus+sriov instead of standard connection")
 	// runTestsCmd.PersistentFlags().String("servers", "", "path to yaml file with servers list")
 
 	// Cobra supports local flags which will only run when this command
@@ -61,5 +65,5 @@ func runTests(cmd *cobra.Command, args []string) {
 	}
 	log.Infof("servers: %v", servers)
 
-	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter)
+	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter, useSriov)
 }

@@ -2,8 +2,8 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"time"
@@ -22,7 +22,7 @@ type SshConfig struct {
 	User       string
 	SshIpAddr  string // ip to use for ssh
 	TestIpAddr string // ip to use for the tests (i.e iperf3)
-	Port       int
+	Port       string
 	KeyPath    string
 	Nodename   string // name as k8s node
 }
@@ -65,7 +65,7 @@ func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	address := conf.SshIpAddr + ":" + fmt.Sprint(conf.Port)
+	address := net.JoinHostPort(conf.SshIpAddr, conf.Port)
 	log.Infof("ssh: connecting to %s", address)
 	conn, err := ssh.Dial("tcp", address, config)
 	if err != nil {

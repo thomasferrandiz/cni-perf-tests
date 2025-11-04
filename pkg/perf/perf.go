@@ -58,7 +58,6 @@ type testResult struct {
 	testType   testType
 	streamType streamType
 	protocol   string
-	rate       float64
 	rates      []float64 // one entry for each run of the test
 	latency    float64
 }
@@ -98,7 +97,7 @@ func writeCSVFile(results testResults, filename string) error {
 	return nil
 }
 
-func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) {
+func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int, useSriov bool) {
 	results := make(testResults, 0)
 	bmRes, err := BareMetalPerfTests(ctx, clientHost, serverHost, nbIter)
 	if err != nil {

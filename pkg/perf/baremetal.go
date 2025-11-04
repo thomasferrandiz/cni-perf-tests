@@ -19,7 +19,6 @@ func runBMIperf3Server(ctx context.Context, host utils.SshConfig) {
 
 func runBMIperf3TcpMono(host utils.SshConfig, serverAddr string) ([]byte, error) {
 	iperf3Command := "iperf3 -c " + serverAddr + " -t 25 -O 5 -P 1 -Z --dont-fragment --json"
-	// iperf3Command := "iperf3 -c " + serverAddr + " -t 5 -P 1 -Z --dont-fragment --json"
 
 	res, err := utils.RunCommandRemotely(host, iperf3Command)
 	if err != nil {
@@ -30,7 +29,6 @@ func runBMIperf3TcpMono(host utils.SshConfig, serverAddr string) ([]byte, error)
 
 func runBMIperf3TcpMulti(host utils.SshConfig, serverAddr string) ([]byte, error) {
 	iperf3Command := "iperf3 -c " + serverAddr + " -t 25 -O 5 -P 16 -Z --dont-fragment --json"
-	// iperf3Command := "iperf3 -c " + serverAddr + " -t 5 -P 1 -Z --dont-fragment --json"
 
 	res, err := utils.RunCommandRemotely(host, iperf3Command)
 	if err != nil {
