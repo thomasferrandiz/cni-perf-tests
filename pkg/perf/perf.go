@@ -97,7 +97,7 @@ func writeCSVFile(results testResults, filename string) error {
 	return nil
 }
 
-func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int, useSriov bool) {
+func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) {
 	results := make(testResults, 0)
 	bmRes, err := BareMetalPerfTests(ctx, clientHost, serverHost, nbIter)
 	if err != nil {
@@ -127,7 +127,30 @@ func AllPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.
 		results = append(results, pnRes...)
 	}
 
-	ppRes, err := PodToPodPerfTests(ctx, masterNode, clientHost, serverHost, nbIter)
+	ppRes, err := PodToPodPerfTests(ctx, masterNode, clientHost, serverHost, nbIter, false)
+	if err != nil {
+		log.Errorf("Couldn't run PodToPodPerfTests tests: %v", err)
+	} else {
+		results = append(results, ppRes...)
+	}
+	log.Infof("perf test results: %v", results)
+
+	err = writeCSVFile(results, "/tmp/cni-perf-test-results.csv")
+	if err != nil {
+		log.Errorf("couldn't write results to file: %v", err)
+	}
+}
+
+func SriovTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) {
+	results := make(testResults, 0)
+	bmRes, err := BareMetalPerfTests(ctx, clientHost, serverHost, nbIter)
+	if err != nil {
+		log.Errorf("Couldn't run baremetal tests: %v", err)
+	} else {
+		results = append(results, bmRes...)
+	}
+
+	ppRes, err := PodToPodPerfTests(ctx, masterNode, clientHost, serverHost, nbIter, true)
 	if err != nil {
 		log.Errorf("Couldn't run PodToPodPerfTests tests: %v", err)
 	} else {

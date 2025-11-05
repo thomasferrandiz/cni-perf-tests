@@ -65,5 +65,9 @@ func runTests(cmd *cobra.Command, args []string) {
 	}
 	log.Infof("servers: %v", servers)
 
-	perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter, useSriov)
+	if useSriov {
+		perf.SriovTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter)
+	} else {
+		perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter)
+	}
 }

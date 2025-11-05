@@ -2,6 +2,7 @@ package perf
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,33 +12,27 @@ import (
 	log "k8s.io/klog/v2"
 )
 
+// json structure stored in metadata.annotations.k8s\.v1\.cni\.cncf\.io\/network-status
+type NetworkConfig struct {
+	Name      string         `json:"name"`
+	Interface string         `json:"interface,omitempty"`
+	IPs       []string       `json:"ips"`
+	Default   bool           `json:"default,omitempty"`
+	MAC       string         `json:"mac,omitempty"`
+	DNS       map[string]any `json:"dns,omitempty"`
+}
+
 const (
-	kubectl        = "/var/lib/rancher/rke2/bin/kubectl "
-	kubeconfig     = " --kubeconfig=/etc/rancher/rke2/rke2.yaml --server=https://127.0.0.1:6443 "
-	kubeconfigPath = "/etc/rancher/rke2/rke2.yaml"
-	// iperf3ServerPodCommand     = kubectl + kubeconfig + "run iperf3server --image networkstatic/iperf3:latest --overrides='{ \"spec\": {  \"nodeName\":\"%s\" } }'-- %s"
-	// iperf3ServerKillPodCommand = kubectl + kubeconfig + "delete pod iperf3server"
+	kubectl                    = "/var/lib/rancher/rke2/bin/kubectl "
+	kubeconfig                 = " --kubeconfig=/etc/rancher/rke2/rke2.yaml --server=https://127.0.0.1:6443 "
+	kubeconfigPath             = "/etc/rancher/rke2/rke2.yaml"
 	iperf3ServerIpAddrCommand  = kubectl + kubeconfig + "get pod %s --template={{.status.podIP}} -n iperf3-test"
 	iperf3ServerGetCommand     = kubectl + kubeconfig + "get pods --field-selector 'spec.nodeName=%s' -n iperf3-test --no-headers"
 	iperf3PodRunCommand        = kubectl + kubeconfig + "-n iperf3-test exec %s -- %s"
 	iperf3ServiceIpAddrCommand = kubectl + kubeconfig + "get services -n iperf3-test --field-selector 'metadata.name=iperf3-%s' -o=jsonpath='{.items[0].spec.clusterIP}'"
+	getMultusPodIpCommand      = kubectl + kubeconfig + `get pods -n iperf3-test -l app=multus-demo --field-selector spec.nodeName=%s -o jsonpath='{.items[0]..metadata.annotations.k8s\.v1\.cni\.cncf\.io\/network-status}'`
+	getMultusPodNameCommand    = kubectl + kubeconfig + `get pods -n iperf3-test -l app=multus-demo --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`
 )
-
-// func startPodIperf3Server(ctx context.Context, masterNode utils.SshConfig, serverName string) {
-// 	log.Infof("Starting remote iperf3 server in pod...")
-// 	_, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerPodCommand, serverName, iPerf3ServerCommand))
-// 	if err != nil {
-// 		log.Errorf("Error while starting iperf3 server: %v", err)
-// 	}
-// }
-
-// func killPodIperf3Server(ctx context.Context, masterNode utils.SshConfig) {
-// 	log.Infof("Killing remote iperf3 server in pod...")
-// 	_, err := utils.RunCommandRemotely(masterNode, iperf3ServerKillPodCommand)
-// 	if err != nil {
-// 		log.Errorf("Error while killing iperf3 server: %v", err)
-// 	}
-// }
 
 func getIperf3ServerPodName(masterNode utils.SshConfig, workerNodeName string) (string, error) {
 	bres, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerGetCommand, workerNodeName))
@@ -66,6 +61,32 @@ func getPodIperf3ServerIpAddr(masterNode utils.SshConfig, podName string) (strin
 
 func getPodIperf3ServiceIpAddr(masterNode utils.SshConfig, nodeName string) (string, error) {
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServiceIpAddrCommand, nodeName))
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
+
+func getMultusPodIpAddr(masterNode utils.SshConfig, nodeName string) (string, error) {
+	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodIpCommand, nodeName))
+	if err != nil {
+		return "", err
+	}
+
+	var networkStatus []NetworkConfig
+
+	err = json.Unmarshal([]byte(res), &networkStatus)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("network status: %v\n", networkStatus)
+
+	return networkStatus[1].IPs[0], nil
+}
+
+func getMultusPodName(masterNode utils.SshConfig, nodeName string) (string, error) {
+	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodNameCommand, nodeName))
 	if err != nil {
 		return "", err
 	}
@@ -412,7 +433,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 	return results, nil
 }
 
-func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
+func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int, useSriov bool) (testResults, error) {
 	results := make(testResults, 4)
 
 	results[0] = testResult{
@@ -438,12 +459,18 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 
 	for i := 0; i < nbIter; i++ {
 		log.Infof("##### Running PodToPod test [ %d ] #####", i)
-
+		var iperf3ServerIpAddr string
 		serverPodName, err := getIperf3ServerPodName(masterNode, serverHost.Nodename)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't get iperf3 server pod name: %w", err)
 		}
-		iperf3ServerIpAddr, err := getPodIperf3ServerIpAddr(masterNode, serverPodName)
+		if useSriov {
+			iperf3ServerIpAddr, err = getMultusPodIpAddr(masterNode, serverHost.Nodename)
+		} else {
+			iperf3ServerIpAddr, err = getPodIperf3ServerIpAddr(masterNode, serverPodName)
+
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("couldn't get iperf3 pod address: %w", err)
 		}
