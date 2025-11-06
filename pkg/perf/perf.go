@@ -29,6 +29,13 @@ var typeName = map[testType]string{
 	TypeBareMetal:   "baremetal",
 }
 
+const (
+	udpMonoCommand  = " -O 5 -u -b 0 -Z -t 25 --json"
+	udpMultiCommand = " -O 5 -u -b 0 -Z -P 16 -t 25 --json"
+	tcpMonoCommand  = " -t 25 -O 5 -P 1 -Z --dont-fragment --json"
+	tcpMultiCommand = " -t 25 -O 5 -P 16 -Z --dont-fragment --json"
+)
+
 func (tt testType) String() string {
 	return typeName[tt]
 }

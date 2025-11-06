@@ -94,7 +94,7 @@ func getMultusPodName(masterNode utils.SshConfig, nodeName string) (string, erro
 }
 
 func runPodIperf3TcpMono(masterNode utils.SshConfig, podName, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + " -t 25 -O 5 -P 1 -Z --dont-fragment --json"
+	iperf3Command := "iperf3 -c " + serverAddr + tcpMonoCommand
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func runPodIperf3TcpMono(masterNode utils.SshConfig, podName, serverAddr string)
 }
 
 func runPodIperf3TcpMulti(masterNode utils.SshConfig, podName, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + " -t 25 -O 5 -P 16 -Z --dont-fragment --json"
+	iperf3Command := "iperf3 -c " + serverAddr + tcpMultiCommand
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func runPodIperf3TcpMulti(masterNode utils.SshConfig, podName, serverAddr string
 }
 
 func runPodIperf3UdpMono(masterNode utils.SshConfig, podName, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + " -O 5 -u -b 0 -Z -t 25 --json"
+	iperf3Command := "iperf3 -c " + serverAddr + udpMonoCommand
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func runPodIperf3UdpMono(masterNode utils.SshConfig, podName, serverAddr string)
 }
 
 func runPodIperf3UdpMulti(masterNode utils.SshConfig, podName, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + " -O 5 -u -b 0 -Z -P 16 -t 25 --json"
+	iperf3Command := "iperf3 -c " + serverAddr + udpMultiCommand
 	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
 	if err != nil {
 		return nil, err
