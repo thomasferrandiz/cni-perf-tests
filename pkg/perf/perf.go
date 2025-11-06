@@ -55,11 +55,12 @@ func (st streamType) String() string {
 }
 
 type testResult struct {
-	testType   testType
-	streamType streamType
-	protocol   string
-	rates      []float64 // one entry for each run of the test
-	latency    float64
+	testType     testType
+	streamType   streamType
+	protocol     string
+	rates        []float64 // one entry for each run of the test
+	lost_packets []int64   // one entry for each run of the test, only for UDP
+	latency      float64
 }
 
 type testResults []testResult
@@ -69,11 +70,38 @@ const (
 	iPerf3ServerCommand = "iperf3 -s -1"
 )
 
+func averageFloat64(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	} else {
+		sum := 0.0
+		for _, v := range values {
+			sum += v
+		}
+		return sum / float64(len(values))
+	}
+}
+
 func exportToCSV(results testResults) []string {
-	var bres []string
+
+	nbRate := 0
+	for _, result := range results {
+		nbRate = max(nbRate, len(result.rates))
+	}
+	rates_header := ""
+	for i := 0; i < nbRate; i++ {
+		rates_header = fmt.Sprintf("%srate #%d,", rates_header, i)
+	}
+	lp_header := ""
+	for i := 0; i < nbRate; i++ {
+		lp_header = fmt.Sprintf("%slost packets #%d,", lp_header, i)
+	}
+
+	header_line := fmt.Sprintf("protocol,type,stream type,%savg rate,%s\n", rates_header, lp_header)
+	var bres []string = []string{header_line}
 	for _, result := range results {
 		jrates, _ := json.Marshal(result.rates)
-		b := fmt.Sprintf("%s, %s, %s, %s\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"))
+		b := fmt.Sprintf("%s, %s, %s, %s, %f\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"), averageFloat64(result.rates))
 		bres = append(bres, b)
 	}
 	return bres

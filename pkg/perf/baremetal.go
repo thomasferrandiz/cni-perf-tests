@@ -118,7 +118,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -163,12 +163,13 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err := utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
+		results[1].lost_packets = append(results[1].lost_packets, udpLP)
 		wg.Wait()
 
 		//UDP Multi
@@ -185,12 +186,13 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
+		results[3].lost_packets = append(results[3].lost_packets, udpLP)
 		wg.Wait()
 	}
 

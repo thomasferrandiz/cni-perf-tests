@@ -171,7 +171,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -197,11 +197,12 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err := utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[1].rates = append(results[1].rates, udpRate)
+		results[1].lost_packets = append(results[1].lost_packets, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
@@ -210,11 +211,12 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[3].rates = append(results[3].rates, udpRate)
+		results[3].lost_packets = append(results[3].lost_packets, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
@@ -259,7 +261,7 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +274,7 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -285,11 +287,12 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err := utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[1].rates = append(results[1].rates, udpRate)
+		results[1].lost_packets = append(results[1].lost_packets, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
@@ -298,11 +301,12 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[3].rates = append(results[3].rates, udpRate)
+		results[3].lost_packets = append(results[3].lost_packets, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
@@ -357,7 +361,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -379,7 +383,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
@@ -400,12 +404,13 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err := utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
+		results[1].lost_packets = append(results[1].lost_packets, udpLP)
 		wg.Wait()
 
 		//UDP Multi
@@ -421,12 +426,13 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
+		results[3].lost_packets = append(results[3].lost_packets, udpLP)
 		wg.Wait()
 	}
 
@@ -485,7 +491,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMono: %w ", err)
 		}
-		tcpRate, err := utils.ParseIperf3JsonOutput(res)
+		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse tcp mono rate: %w", err)
 		}
@@ -498,7 +504,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMulti: %w ", err)
 		}
-		tcpRate, err = utils.ParseIperf3JsonOutput(res)
+		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse tcp multi rate: %w", err)
 		}
@@ -511,12 +517,13 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3UdpMono: %w ", err)
 		}
-		udpRate, err := utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err := utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse udp mono rate: %w", err)
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
+		results[1].lost_packets = append(results[1].lost_packets, udpLP)
 
 		time.Sleep(waitForIperf3Server * time.Second)
 		//UDP Multi
@@ -525,12 +532,14 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3UdpMulti: %w ", err)
 		}
-		udpRate, err = utils.ParseIperf3JsonOutput(res)
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse tcp multi rate: %w", err)
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
+		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
