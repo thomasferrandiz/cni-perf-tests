@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	yamlv2 "gopkg.in/yaml.v2"
+	yamlv3 "gopkg.in/yaml.v3"
 	log "k8s.io/klog/v2"
 )
 
@@ -29,7 +29,7 @@ type SshConfig struct {
 
 func ParseConfig(conf []byte) (*Servers, error) {
 	testConf := new(Servers)
-	err := yamlv2.Unmarshal(conf, testConf)
+	err := yamlv3.Unmarshal(conf, testConf)
 	if err != nil {
 		return nil, err
 	}
