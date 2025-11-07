@@ -17,38 +17,8 @@ func runBMIperf3Server(ctx context.Context, host utils.SshConfig) {
 	}
 }
 
-func runBMIperf3TcpMono(host utils.SshConfig, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + tcpMonoCommand
-
-	res, err := utils.RunCommandRemotely(host, iperf3Command)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func runBMIperf3TcpMulti(host utils.SshConfig, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + tcpMultiCommand
-
-	res, err := utils.RunCommandRemotely(host, iperf3Command)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func runBMIPerf3UdpMono(host utils.SshConfig, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + udpMonoCommand
-
-	res, err := utils.RunCommandRemotely(host, iperf3Command)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func runBMIPerf3UdpMulti(host utils.SshConfig, serverAddr string) ([]byte, error) {
-	iperf3Command := "iperf3 -c " + serverAddr + udpMultiCommand
+func runBMIPerf3Command(host utils.SshConfig, serverAddr, command string) ([]byte, error) {
+	iperf3Command := "iperf3 -c " + serverAddr + command
 
 	res, err := utils.RunCommandRemotely(host, iperf3Command)
 	if err != nil {
@@ -68,7 +38,7 @@ func runLatencyTest(host utils.SshConfig, serverAddr string) ([]byte, error) {
 }
 
 func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
-	results := make(testResults, 4)
+	results := make(testResults, 5)
 
 	results[0] = testResult{
 		testType:   TypeBareMetal,
@@ -90,7 +60,11 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		streamType: StreamMulti,
 		protocol:   UDPProtocol,
 	}
-
+	results[4] = testResult{
+		testType:   TypeBareMetal,
+		streamType: PPS,
+		protocol:   UDPProtocol,
+	}
 	//WaitGroup to sync with the iperf3 server goroutine
 	wg := sync.WaitGroup{}
 
@@ -114,7 +88,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
-		res, err := runBMIperf3TcpMono(clientHost, serverHost.TestIpAddr)
+		res, err := runBMIPerf3Command(clientHost, serverHost.TestIpAddr, tcpMonoCommand)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +110,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
-		res, err = runBMIperf3TcpMulti(clientHost, serverHost.TestIpAddr)
+		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, tcpMultiCommand)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +133,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
-		res, err = runBMIPerf3UdpMono(clientHost, serverHost.TestIpAddr)
+		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpMonoCommand)
 		if err != nil {
 			return nil, err
 		}
@@ -182,7 +156,7 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		}()
 		time.Sleep(waitForIperf3Server * time.Second)
 
-		res, err = runBMIPerf3UdpMulti(clientHost, serverHost.TestIpAddr)
+		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpMultiCommand)
 		if err != nil {
 			return nil, err
 		}
@@ -193,6 +167,29 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		results[3].rates = append(results[3].rates, udpRate)
 		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+		wg.Wait()
+
+		//UDP PPS
+		log.Infof("    ##### UDP PPS")
+		wg.Add(1)
+
+		go func() {
+			runBMIperf3Server(ctx, serverHost)
+			wg.Done()
+		}()
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpPPSCommand)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[4].rates = append(results[4].rates, udpRate)
+		results[4].lost_packets = append(results[4].lost_packets, udpLP)
 		wg.Wait()
 	}
 

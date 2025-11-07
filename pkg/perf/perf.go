@@ -32,6 +32,7 @@ var typeName = map[testType]string{
 const (
 	udpMonoCommand  = " -O 5 -u -b 0 -Z -t 25 --json"
 	udpMultiCommand = " -O 5 -u -b 0 -Z -P 16 -t 25 --json"
+	udpPPSCommand   = " -O 5 -u -b 0 -Z -t 25 -l 64 --json"
 	tcpMonoCommand  = " -t 25 -O 5 -P 1 -Z --dont-fragment --json"
 	tcpMultiCommand = " -t 25 -O 5 -P 16 -Z --dont-fragment --json"
 )
@@ -50,11 +51,13 @@ type streamType int
 const (
 	StreamMono = iota
 	StreamMulti
+	PPS
 )
 
 var streamName = map[streamType]string{
 	StreamMono:  "mono-stream",
 	StreamMulti: "multi-stream",
+	PPS:         "packets-per-second",
 }
 
 func (st streamType) String() string {
@@ -108,7 +111,8 @@ func exportToCSV(results testResults) []string {
 	var bres []string = []string{header_line}
 	for _, result := range results {
 		jrates, _ := json.Marshal(result.rates)
-		b := fmt.Sprintf("%s, %s, %s, %s, %f\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"), averageFloat64(result.rates))
+		jlp, _ := json.Marshal(result.lost_packets)
+		b := fmt.Sprintf("%s,%s,%s,%s,%f,%s\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"), averageFloat64(result.rates), strings.Trim(string(jlp), "[]"))
 		bres = append(bres, b)
 	}
 	return bres
