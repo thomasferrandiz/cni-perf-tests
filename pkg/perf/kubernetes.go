@@ -144,11 +144,12 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[0].rates = append(results[0].rates, tcpRate)
+		results[0].losses = append(results[0].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//TCP Multi
@@ -157,11 +158,12 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[2].rates = append(results[2].rates, tcpRate)
+		results[2].losses = append(results[2].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
@@ -175,7 +177,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[1].rates = append(results[1].rates, udpRate)
-		results[1].lost_packets = append(results[1].lost_packets, udpLP)
+		results[1].losses = append(results[1].losses, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
@@ -189,7 +191,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 			return nil, err
 		}
 		results[3].rates = append(results[3].rates, udpRate)
-		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+		results[3].losses = append(results[3].losses, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
@@ -234,11 +236,12 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[0].rates = append(results[0].rates, tcpRate)
+		results[0].losses = append(results[0].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//TCP Multi
@@ -247,11 +250,12 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 		results[2].rates = append(results[2].rates, tcpRate)
+		results[2].losses = append(results[2].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
@@ -265,7 +269,7 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 			return nil, err
 		}
 		results[1].rates = append(results[1].rates, udpRate)
-		results[1].lost_packets = append(results[1].lost_packets, udpLP)
+		results[1].losses = append(results[1].losses, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Multi
@@ -279,7 +283,7 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 			return nil, err
 		}
 		results[3].rates = append(results[3].rates, udpRate)
-		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+		results[3].losses = append(results[3].losses, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
@@ -334,12 +338,13 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[0].rates = append(results[0].rates, tcpRate)
+		results[0].losses = append(results[0].losses, retransmits)
 		wg.Wait()
 
 		//TCP Multi
@@ -356,12 +361,13 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		if err != nil {
 			return nil, err
 		}
-		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, err
 		}
 
 		results[2].rates = append(results[2].rates, tcpRate)
+		results[2].losses = append(results[2].losses, retransmits)
 		wg.Wait()
 
 		//UDP Mono
@@ -383,7 +389,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
-		results[1].lost_packets = append(results[1].lost_packets, udpLP)
+		results[1].losses = append(results[1].losses, udpLP)
 		wg.Wait()
 
 		//UDP Multi
@@ -405,7 +411,7 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
-		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+		results[3].losses = append(results[3].losses, udpLP)
 		wg.Wait()
 	}
 
@@ -469,11 +475,12 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMono: %w ", err)
 		}
-		tcpRate, err := utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err := utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse tcp mono rate: %w", err)
 		}
 		results[0].rates = append(results[0].rates, tcpRate)
+		results[0].losses = append(results[0].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//TCP Multi
@@ -482,11 +489,12 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		if err != nil {
 			return nil, fmt.Errorf("error in runPodIperf3TcpMulti: %w ", err)
 		}
-		tcpRate, err = utils.ParseIperf3TCPJsonOutput(res)
+		tcpRate, retransmits, err = utils.ParseIperf3TCPJsonOutput(res)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse tcp multi rate: %w", err)
 		}
 		results[2].rates = append(results[2].rates, tcpRate)
+		results[2].losses = append(results[2].losses, retransmits)
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		//UDP Mono
@@ -501,7 +509,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		}
 
 		results[1].rates = append(results[1].rates, udpRate)
-		results[1].lost_packets = append(results[1].lost_packets, udpLP)
+		results[1].losses = append(results[1].losses, udpLP)
 
 		time.Sleep(waitForIperf3Server * time.Second)
 		//UDP Multi
@@ -516,7 +524,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		}
 
 		results[3].rates = append(results[3].rates, udpRate)
-		results[3].lost_packets = append(results[3].lost_packets, udpLP)
+		results[3].losses = append(results[3].losses, udpLP)
 
 		time.Sleep(waitForIperf3Server * time.Second)
 
@@ -532,7 +540,7 @@ func PodToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost u
 		}
 
 		results[4].rates = append(results[4].rates, udpRate)
-		results[4].lost_packets = append(results[4].lost_packets, udpLP)
+		results[4].losses = append(results[4].losses, udpLP)
 
 		time.Sleep(waitForIperf3Server * time.Second)
 	}

@@ -65,12 +65,12 @@ func (st streamType) String() string {
 }
 
 type testResult struct {
-	testType     testType
-	streamType   streamType
-	protocol     string
-	rates        []float64 // one entry for each run of the test
-	lost_packets []int64   // one entry for each run of the test, only for UDP
-	latency      float64
+	testType   testType
+	streamType streamType
+	protocol   string
+	rates      []float64 // one entry for each run of the test
+	losses     []int64   // one entry for each run of the test, UDP: lost packets, TCP: retransmits
+	latency    float64
 }
 
 type testResults []testResult
@@ -104,14 +104,14 @@ func exportToCSV(results testResults) []string {
 	}
 	lp_header := ""
 	for i := 0; i < nbRate; i++ {
-		lp_header = fmt.Sprintf("%slost packets #%d,", lp_header, i)
+		lp_header = fmt.Sprintf("%slost packets/retransmits #%d,", lp_header, i)
 	}
 
 	header_line := fmt.Sprintf("protocol,type,stream type,%savg rate,%s\n", rates_header, lp_header)
 	var bres []string = []string{header_line}
 	for _, result := range results {
 		jrates, _ := json.Marshal(result.rates)
-		jlp, _ := json.Marshal(result.lost_packets)
+		jlp, _ := json.Marshal(result.losses)
 		b := fmt.Sprintf("%s,%s,%s,%s,%f,%s\n", result.protocol, result.testType, result.streamType, strings.Trim(string(jrates), "[]"), averageFloat64(result.rates), strings.Trim(string(jlp), "[]"))
 		bres = append(bres, b)
 	}
