@@ -80,12 +80,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 		log.Infof("##### Running baremetal test [ %d ] #####", i)
 		// TCP Mono
 		log.Infof("    ##### TCP Mono")
-		wg.Add(1)
 
-		go func() {
+		wg.Go(func() {
 			runBMIperf3Server(ctx, serverHost)
-			wg.Done()
-		}()
+		})
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err := runBMIPerf3Command(clientHost, serverHost.TestIpAddr, tcpMonoCommand)
@@ -103,12 +101,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		// TCP Multi
 		log.Infof("    ##### TCP Multi")
-		wg.Add(1)
 
-		go func() {
+		wg.Go(func() {
 			runBMIperf3Server(ctx, serverHost)
-			wg.Done()
-		}()
+		})
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, tcpMultiCommand)
@@ -126,12 +122,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		//UDP Mono
 		log.Infof("    ##### UDP Mono")
-		wg.Add(1)
 
-		go func() {
+		wg.Go(func() {
 			runBMIperf3Server(ctx, serverHost)
-			wg.Done()
-		}()
+		})
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpMonoCommand)
@@ -149,12 +143,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		//UDP Multi
 		log.Infof("    ##### UDP Multi")
-		wg.Add(1)
 
-		go func() {
+		wg.Go(func() {
 			runBMIperf3Server(ctx, serverHost)
-			wg.Done()
-		}()
+		})
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpMultiCommand)
@@ -172,12 +164,10 @@ func BareMetalPerfTests(ctx context.Context, clientHost, serverHost utils.SshCon
 
 		//UDP PPS
 		log.Infof("    ##### UDP PPS")
-		wg.Add(1)
 
-		go func() {
+		wg.Go(func() {
 			runBMIperf3Server(ctx, serverHost)
-			wg.Done()
-		}()
+		})
 		time.Sleep(waitForIperf3Server * time.Second)
 
 		res, err = runBMIPerf3Command(clientHost, serverHost.TestIpAddr, udpPPSCommand)
