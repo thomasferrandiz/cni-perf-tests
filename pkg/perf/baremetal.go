@@ -14,15 +14,19 @@ func runBMIperf3Server(ctx context.Context, host utils.SshConfig) {
 	_, err := utils.RunCommandRemotely(host, iPerf3ServerCommand)
 	if err != nil {
 		log.Errorf("Error while running iperf3 server: %v", err)
+	} else {
+		log.Info("iperf3 server completed successfully")
 	}
 }
 
 func runBMIPerf3Command(host utils.SshConfig, serverAddr, command string) ([]byte, error) {
 	iperf3Command := "iperf3 -c " + serverAddr + command
-
+	log.Info("Running iperf3 baremetal command...")
 	res, err := utils.RunCommandRemotely(host, iperf3Command)
 	if err != nil {
 		return nil, err
+	} else {
+		log.Info("iperf3 baremetal command completed successfully")
 	}
 	return res, nil
 }
