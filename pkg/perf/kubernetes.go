@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tferrandiz/cni-perf-tests/pkg/retry"
 	"github.com/tferrandiz/cni-perf-tests/pkg/utils"
 	log "k8s.io/klog/v2"
 )
@@ -35,7 +36,11 @@ const (
 )
 
 func getIperf3ServerPodName(masterNode utils.SshConfig, workerNodeName string) (string, error) {
-	bres, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerGetCommand, workerNodeName))
+	bres, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerGetCommand, workerNodeName))
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +57,11 @@ func getIperf3ServerPodName(masterNode utils.SshConfig, workerNodeName string) (
 }
 
 func getPodIperf3ServerIpAddr(masterNode utils.SshConfig, podName string) (string, error) {
-	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerIpAddrCommand, podName))
+	res, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServerIpAddrCommand, podName))
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +69,11 @@ func getPodIperf3ServerIpAddr(masterNode utils.SshConfig, podName string) (strin
 }
 
 func getPodIperf3ServiceIpAddr(masterNode utils.SshConfig, nodeName string) (string, error) {
-	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServiceIpAddrCommand, nodeName))
+	res, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3ServiceIpAddrCommand, nodeName))
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +81,11 @@ func getPodIperf3ServiceIpAddr(masterNode utils.SshConfig, nodeName string) (str
 }
 
 func getMultusPodIpAddr(masterNode utils.SshConfig, nodeName string) (string, error) {
-	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodIpCommand, nodeName))
+	res, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodIpCommand, nodeName))
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +103,11 @@ func getMultusPodIpAddr(masterNode utils.SshConfig, nodeName string) (string, er
 }
 
 func getMultusPodName(masterNode utils.SshConfig, nodeName string) (string, error) {
-	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodNameCommand, nodeName))
+	res, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(getMultusPodNameCommand, nodeName))
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +116,12 @@ func getMultusPodName(masterNode utils.SshConfig, nodeName string) (string, erro
 
 func runPodIperf3Command(masterNode utils.SshConfig, podName, serverAddr, command string) ([]byte, error) {
 	iperf3Command := "iperf3 -c " + serverAddr + command
-	res, err := utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
+	res, err := retry.DoWithData(
+		func() ([]byte, error) {
+			return utils.RunCommandRemotely(masterNode, fmt.Sprintf(iperf3PodRunCommand, podName, iperf3Command))
+		},
+	)
+
 	if err != nil {
 		return nil, err
 	}

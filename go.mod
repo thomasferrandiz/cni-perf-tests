@@ -3,6 +3,7 @@ module github.com/tferrandiz/cni-perf-tests
 go 1.25
 
 require (
+	github.com/avast/retry-go/v4 v4.6.1
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.43.0
