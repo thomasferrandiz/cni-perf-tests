@@ -103,7 +103,7 @@ func runPodIperf3Command(masterNode utils.SshConfig, podName, serverAddr, comman
 }
 
 func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
-	results := make(testResults, 4)
+	results := make(testResults, 5)
 
 	results[0] = testResult{
 		testType:   TypeNodePod,
@@ -125,7 +125,11 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		streamType: StreamMulti,
 		protocol:   UDPProtocol,
 	}
-
+	results[4] = testResult{
+		testType:   TypeNodePod,
+		streamType: PPS,
+		protocol:   UDPProtocol,
+	}
 	for i := 0; i < nbIter; i++ {
 		log.Infof("##### Running NodetoPod test [ %d ] #####", i)
 
@@ -192,6 +196,23 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 		}
 		results[3].rates = append(results[3].rates, udpRate)
 		results[3].losses = append(results[3].losses, udpLP)
+
+		time.Sleep(waitForIperf3Server * time.Second)
+
+		//UDP PPS
+		log.Infof("    ##### UDP PPS")
+		res, err = runBMIPerf3Command(clientHost, iperf3ServerIpAddr, udpPPSCommand)
+		if err != nil {
+			return nil, fmt.Errorf("error in runPodIperf3UdpPPS: %w ", err)
+		}
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't parse UDP PPS result : %w", err)
+		}
+
+		results[4].rates = append(results[4].rates, udpRate)
+		results[4].losses = append(results[4].losses, udpLP)
+
 		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
@@ -199,7 +220,7 @@ func NodeToPodPerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 }
 
 func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
-	results := make(testResults, 4)
+	results := make(testResults, 5)
 
 	results[0] = testResult{
 		testType:   TypeNodeService,
@@ -221,7 +242,11 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		streamType: StreamMulti,
 		protocol:   UDPProtocol,
 	}
-
+	results[4] = testResult{
+		testType:   TypeNodeService,
+		streamType: PPS,
+		protocol:   UDPProtocol,
+	}
 	for i := 0; i < nbIter; i++ {
 		log.Infof("##### Running NodetoService test [ %d ] #####", i)
 
@@ -285,13 +310,27 @@ func NodeToServicePerfTests(ctx context.Context, masterNode, clientHost, serverH
 		results[3].rates = append(results[3].rates, udpRate)
 		results[3].losses = append(results[3].losses, udpLP)
 		time.Sleep(waitForIperf3Server * time.Second)
+
+		//UDP Multi
+		log.Infof("    ##### UDP Multi")
+		res, err = runBMIPerf3Command(clientHost, iperf3ServiceIpAddr, udpPPSCommand)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+		results[4].rates = append(results[4].rates, udpRate)
+		results[4].losses = append(results[4].losses, udpLP)
+		time.Sleep(waitForIperf3Server * time.Second)
 	}
 
 	return results, nil
 }
 
 func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost utils.SshConfig, nbIter int) (testResults, error) {
-	results := make(testResults, 4)
+	results := make(testResults, 5)
 
 	results[0] = testResult{
 		testType:   TypePodNode,
@@ -311,6 +350,11 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 	results[3] = testResult{
 		testType:   TypePodNode,
 		streamType: StreamMulti,
+		protocol:   UDPProtocol,
+	}
+	results[4] = testResult{
+		testType:   TypePodNode,
+		streamType: PPS,
 		protocol:   UDPProtocol,
 	}
 	// WaitGroup to sync with the iperf3 server goroutine
@@ -404,6 +448,26 @@ func PodToNodePerfTests(ctx context.Context, masterNode, clientHost, serverHost 
 
 		results[3].rates = append(results[3].rates, udpRate)
 		results[3].losses = append(results[3].losses, udpLP)
+		wg.Wait()
+
+		//UDP Multi
+		log.Infof("    ##### UDP PPS")
+
+		wg.Go(func() {
+			runBMIperf3Server(ctx, serverHost)
+		})
+		time.Sleep(waitForIperf3Server * time.Second)
+		res, err = runPodIperf3Command(masterNode, podName, serverHost.TestIpAddr, udpPPSCommand)
+		if err != nil {
+			return nil, err
+		}
+		udpRate, udpLP, err = utils.ParseIperf3UDPJsonOutput(res)
+		if err != nil {
+			return nil, err
+		}
+
+		results[4].rates = append(results[4].rates, udpRate)
+		results[4].losses = append(results[4].losses, udpLP)
 		wg.Wait()
 	}
 
