@@ -70,4 +70,5 @@ func runTests(cmd *cobra.Command, args []string) {
 	} else {
 		perf.AllPerfTests(ctx, servers.MasterNode, servers.WorkerNode1, servers.WorkerNode2, nbIter)
 	}
+	utils.CloseAllClients()
 }

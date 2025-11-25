@@ -27,6 +27,8 @@ type SshConfig struct {
 	Nodename   string // name as k8s node
 }
 
+var clients map[SshConfig]*ssh.Client
+
 func ParseConfig(conf []byte) (*Servers, error) {
 	testConf := new(Servers)
 	err := yamlv3.Unmarshal(conf, testConf)
@@ -56,6 +58,30 @@ func RunCommand(cmd string) (string, error) {
 	return string(out), err
 }
 
+func GetSshClient(conf SshConfig) (*ssh.Client, error) {
+	if len(clients) == 0 {
+		clients = make(map[SshConfig]*ssh.Client)
+	}
+
+	if clients[conf] == nil {
+		client, err := CreateSShClient(conf)
+		if err != nil {
+			return nil, err
+		}
+		clients[conf] = client
+	}
+	return clients[conf], nil
+}
+
+func CloseAllClients() {
+	for _, client := range clients {
+		if client != nil {
+			err := client.Close()
+			log.Errorf("failed to close client: %v", err)
+		}
+	}
+}
+
 func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
 		User: conf.User,
@@ -76,11 +102,11 @@ func CreateSShClient(conf SshConfig) (*ssh.Client, error) {
 }
 
 func RunCommandRemotely(conf SshConfig, cmd string) ([]byte, error) {
-	conn, err := CreateSShClient(conf)
+	conn, err := GetSshClient(conf)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	// defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
